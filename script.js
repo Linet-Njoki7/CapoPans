@@ -1,282 +1,345 @@
 /**
- * Capo Pans — Website JS
- * Dutch pancake catering website
+ * Capo Pans — script.js
+ * Interactive JS: nav, marquee gallery, lightbox, form, scroll reveals
  */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ── 1. YEAR ───────────────────────────────────────────────────────────
-    const yearEl = document.getElementById('year');
-    if (yearEl) yearEl.textContent = new Date().getFullYear();
+  // ══════════════════════════════════
+  // 1. YEAR
+  // ══════════════════════════════════
+  const yearEl = document.getElementById('year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-    // ── 2. SCROLL-BASED HEADER ────────────────────────────────────────────
-    const header = document.getElementById('header');
+  // ══════════════════════════════════
+  // 2. FLOATING NAV — scroll + active
+  // ══════════════════════════════════
+  const header = document.getElementById('header');
 
-    const onScroll = () => {
-        if (window.scrollY > 60) {
-            header.classList.add('scrolled');
-        } else {
-            header.classList.remove('scrolled');
-        }
-        revealElements();
-        setActiveNavLink();
-    };
+  window.addEventListener('scroll', () => {
+    header.classList.toggle('scrolled', window.scrollY > 40);
+    revealOnScroll();
+    setActiveLink();
+  }, { passive: true });
 
-    window.addEventListener('scroll', onScroll, { passive: true });
+  // ══════════════════════════════════
+  // 3. MOBILE NAV
+  // ══════════════════════════════════
+  const hamburger  = document.getElementById('hamburger');
+  const navLinks   = document.getElementById('navLinks');
+  const navOverlay = document.getElementById('navOverlay');
+  const navItems   = document.querySelectorAll('.nav-link');
 
-    // ── 3. MOBILE NAV ─────────────────────────────────────────────────────
-    const hamburger   = document.querySelector('.hamburger');
-    const navLinks    = document.querySelector('.nav-links');
-    const navCta      = document.querySelector('.nav-cta');
-    const overlay     = document.getElementById('mobileOverlay');
-    const navItems    = document.querySelectorAll('.nav-links a');
+  function openNav() {
+  navLinks.classList.add('open');
+  hamburger.classList.add('open');
+  hamburger.setAttribute('aria-expanded', 'true');
+}
 
-    function openMenu() {
-        navLinks.classList.add('open');
-        hamburger.classList.add('open');
-        hamburger.setAttribute('aria-expanded', 'true');
-        overlay.classList.add('show');
-        document.body.style.overflow = 'hidden';
-    }
+function closeNav() {
+  navLinks.classList.remove('open');
+  hamburger.classList.remove('open');
+  hamburger.setAttribute('aria-expanded', 'false');
+}
 
-    function closeMenu() {
-        navLinks.classList.remove('open');
-        hamburger.classList.remove('open');
-        hamburger.setAttribute('aria-expanded', 'false');
-        overlay.classList.remove('show');
-        document.body.style.overflow = '';
-    }
+if (hamburger) hamburger.addEventListener('click', () =>
+  navLinks.classList.contains('open') ? closeNav() : openNav()
+);
+if (navOverlay) navOverlay.addEventListener('click', closeNav);
+navItems.forEach(a => a.addEventListener('click', closeNav));
 
-    if (hamburger) {
-        hamburger.addEventListener('click', () => {
-            navLinks.classList.contains('open') ? closeMenu() : openMenu();
-        });
-    }
+// Close drawer when clicking outside
+document.addEventListener('click', e => {
+  if (navLinks.classList.contains('open') &&
+      !navLinks.contains(e.target) &&
+      !hamburger.contains(e.target)) {
+    closeNav();
+  }
+});
 
-    if (overlay) overlay.addEventListener('click', closeMenu);
+  // ══════════════════════════════════
+  // 4. SMOOTH SCROLL
+  // ══════════════════════════════════
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href');
+      if (id === '#') return;
+      const target = document.querySelector(id);
+      if (!target) return;
+      e.preventDefault();
+      window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+    });
+  });
 
-    navItems.forEach(item => item.addEventListener('click', closeMenu));
+  // ══════════════════════════════════
+  // 5. ACTIVE NAV LINK
+  // ══════════════════════════════════
+  const sections = document.querySelectorAll('section[id]');
 
-    // ── 4. SMOOTH SCROLL ──────────────────────────────────────────────────
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            const targetId = this.getAttribute('href');
-            if (targetId === '#') return;
-            const target = document.querySelector(targetId);
-            if (!target) return;
-            e.preventDefault();
-            const offset = 80;
-            const top = target.getBoundingClientRect().top + window.scrollY - offset;
-            window.scrollTo({ top, behavior: 'smooth' });
-        });
+  function setActiveLink() {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY + 110 >= s.offsetTop) current = s.id;
+    });
+    navItems.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === `#${current}`);
+    });
+  }
+
+  // ══════════════════════════════════
+  // 6. SCROLL REVEAL
+  // ══════════════════════════════════
+  function revealOnScroll() {
+    const thresh = window.innerHeight * 0.88;
+    document.querySelectorAll('.reveal:not(.active)').forEach(el => {
+      if (el.getBoundingClientRect().top < thresh) el.classList.add('active');
+    });
+  }
+
+  // Trigger hero reveals immediately
+  setTimeout(() => {
+    document.querySelectorAll('.reveal-hero').forEach(el => el.classList.add('in'));
+  }, 120);
+
+  revealOnScroll();
+
+  // ══════════════════════════════════
+  // 7. GALLERY MARQUEE BUILD + LIGHTBOX
+  // ══════════════════════════════════
+  const galleryItems = [
+    { src: 'images/event_catering.png', alt: 'Capo Pans live kookstation bij een evenement', caption: 'Live kookstation' },
+    { src: 'images/hero_pancakes.png',  alt: 'Verse goudbruine mini pannenkoekjes op een bord', caption: 'Verse mini pannenkoekjes' },
+    { src: 'images/event_catering.png', alt: 'Gasten genieten van pannenkoekjes op een feest', caption: 'Gasten genieten' },
+    { src: 'images/hero_pancakes.png',  alt: 'Mini pannenkoekjes met Nutella en hazelnoten', caption: 'Nutella Dream' },
+    { src: 'images/event_catering.png', alt: 'Elegante Capo Pans opstelling op een bruiloft', caption: 'Bruiloft opstelling' },
+    { src: 'images/hero_pancakes.png',  alt: 'Mini pannenkoekjes met verse aardbeien en slagroom', caption: 'Aardbei & Room' },
+    { src: 'images/event_catering.png', alt: 'Capo Pans pancake bar op een bedrijfsevenement', caption: 'Bedrijfsevenement' },
+    { src: 'images/hero_pancakes.png',  alt: 'Mini pannenkoekjes met Biscoff spread', caption: 'Biscoff Caramel' },
+  ];
+
+  const track = document.getElementById('marqueeTrack');
+  if (track) {
+    // Render two sets for seamless infinite loop
+    [...galleryItems, ...galleryItems].forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = 'gal-btn';
+      btn.setAttribute('aria-label', `Foto bekijken: ${item.caption}`);
+      btn.dataset.src = item.src;
+      btn.dataset.caption = item.caption;
+
+      const img = document.createElement('img');
+      img.src = item.src;
+      img.alt = item.alt;
+      img.loading = 'lazy';
+
+      const overlay = document.createElement('div');
+      overlay.className = 'gal-btn-overlay';
+      overlay.innerHTML = '<i class="fas fa-expand" aria-hidden="true"></i>';
+
+      btn.appendChild(img);
+      btn.appendChild(overlay);
+      track.appendChild(btn);
     });
 
-    // ── 5. REVEAL ON SCROLL ───────────────────────────────────────────────
-    function revealElements() {
-        const elements = document.querySelectorAll('.reveal:not(.active), .reveal-fade:not(.in)');
-        const trigger  = window.innerHeight * 0.88;
-
-        elements.forEach(el => {
-            const top = el.getBoundingClientRect().top;
-            if (top < trigger) {
-                if (el.classList.contains('reveal'))      el.classList.add('active');
-                if (el.classList.contains('reveal-fade')) el.classList.add('in');
-            }
-        });
-    }
-
-    // Run on load
-    revealElements();
-
-    // ── 6. ACTIVE NAV LINK ────────────────────────────────────────────────
-    const sections = document.querySelectorAll('section[id]');
-
-    function setActiveNavLink() {
-        let current = '';
-        sections.forEach(section => {
-            if (window.scrollY + 120 >= section.offsetTop) {
-                current = section.getAttribute('id');
-            }
-        });
-
-        navItems.forEach(a => {
-            a.classList.remove('active');
-            const href = a.getAttribute('href').replace('#', '');
-            if (href === current) a.classList.add('active');
-        });
-    }
-
-    // ── 7. FORM SUBMISSION ────────────────────────────────────────────────
-    const form       = document.getElementById('enquiryForm');
-    const submitBtn  = document.getElementById('submitBtn');
-    const formStatus = document.getElementById('formStatus');
-
-    if (form) {
-        // Set min date to today
-        const dateInput = document.getElementById('datum');
-        if (dateInput) {
-            const today = new Date().toISOString().split('T')[0];
-            dateInput.setAttribute('min', today);
-        }
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            if (!validateForm()) return;
-
-            // Loading state
-            submitBtn.classList.add('loading');
-            submitBtn.disabled = true;
-            formStatus.className = 'form-status';
-            formStatus.style.display = 'none';
-
-            // Simulate API call (replace with real endpoint)
-            await new Promise(resolve => setTimeout(resolve, 1800));
-
-            submitBtn.classList.remove('loading');
-            submitBtn.disabled = false;
-
-            // Success
-            formStatus.textContent = '🎉 Bedankt! Uw aanvraag is ontvangen. We nemen binnen 24 uur contact met u op.';
-            formStatus.className = 'form-status success';
-
-            form.reset();
-
-            // Hide after 6s
-            setTimeout(() => {
-                formStatus.style.display = 'none';
-                formStatus.className = 'form-status';
-            }, 6000);
-        });
-    }
-
-    function validateForm() {
-        const naam    = document.getElementById('naam');
-        const email   = document.getElementById('email');
-        const type    = document.getElementById('eventType');
-        const datum   = document.getElementById('datum');
-
-        let valid = true;
-
-        [naam, email, type, datum].forEach(field => {
-            if (!field) return;
-            if (!field.value || field.value === '') {
-                field.style.borderColor = '#e63946';
-                field.addEventListener('input', () => field.style.borderColor = '', { once: true });
-                valid = false;
-            }
-        });
-
-        if (!valid) {
-            formStatus.textContent = 'Vul alle verplichte velden in.';
-            formStatus.className = 'form-status error';
-        }
-
-        return valid;
-    }
-
-    // ── 8. GALLERY LIGHTBOX ───────────────────────────────────────────────
-    const lightbox      = document.getElementById('lightbox');
-    const lightboxImg   = document.getElementById('lightboxImg');
-    const lightboxClose = document.getElementById('lightboxClose');
-    const galItems      = document.querySelectorAll('.gal-item');
-
-    galItems.forEach(item => {
-        item.addEventListener('click', () => {
-            const img = item.querySelector('img');
-            if (!img) return;
-            lightboxImg.src = img.src;
-            lightboxImg.alt = img.alt;
-            lightbox.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-
-            // Fade in
-            lightbox.style.opacity = '0';
-            requestAnimationFrame(() => {
-                lightbox.style.transition = 'opacity 0.25s ease';
-                lightbox.style.opacity = '1';
-            });
-        });
+    // Lightbox on click
+    track.addEventListener('click', e => {
+      const btn = e.target.closest('.gal-btn');
+      if (!btn) return;
+      openLightbox(btn.dataset.src, btn.dataset.caption, btn.querySelector('img').alt);
     });
 
-    function closeLightbox() {
-        lightbox.style.opacity = '0';
-        setTimeout(() => {
-            lightbox.style.display = 'none';
-            document.body.style.overflow = '';
-        }, 250);
+    // Pause marquee on hover
+    const wrap = track.parentElement;
+    if (wrap) {
+      wrap.addEventListener('mouseenter', () => track.style.animationPlayState = 'paused');
+      wrap.addEventListener('mouseleave', () => track.style.animationPlayState = 'running');
     }
 
-    if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
-    if (lightbox)      lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+    // Touch drag to scroll
+    let isDragging = false, startX = 0, scrollLeft = 0;
+    const marqueeWrap = track.parentElement;
 
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && lightbox && lightbox.style.display === 'flex') closeLightbox();
+    if (marqueeWrap) {
+      marqueeWrap.addEventListener('mousedown', e => {
+        isDragging = true;
+        startX = e.pageX - marqueeWrap.offsetLeft;
+        scrollLeft = marqueeWrap.scrollLeft;
+        track.style.animationPlayState = 'paused';
+      });
+      marqueeWrap.addEventListener('mouseleave', () => { isDragging = false; });
+      marqueeWrap.addEventListener('mouseup', () => { isDragging = false; });
+      marqueeWrap.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - marqueeWrap.offsetLeft;
+        marqueeWrap.scrollLeft = scrollLeft - (x - startX);
+      });
+    }
+  }
+
+  // ══════════════════════════════════
+  // 8. LIGHTBOX
+  // ══════════════════════════════════
+  const lightbox   = document.getElementById('lightbox');
+  const lbBackdrop = document.getElementById('lbBackdrop');
+  const lbClose    = document.getElementById('lbClose');
+  const lbImg      = document.getElementById('lbImg');
+  const lbCaption  = document.getElementById('lbCaption');
+
+  function openLightbox(src, caption, alt) {
+    if (!lightbox) return;
+    lbImg.src = src;
+    lbImg.alt = alt || caption;
+    lbCaption.textContent = caption || '';
+    lightbox.hidden = false;
+    document.body.style.overflow = 'hidden';
+    lbClose.focus();
+  }
+
+  function closeLightbox() {
+    if (!lightbox) return;
+    lightbox.hidden = true;
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+
+  if (lbClose)    lbClose.addEventListener('click', closeLightbox);
+  if (lbBackdrop) lbBackdrop.addEventListener('click', closeLightbox);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && lightbox && !lightbox.hidden) closeLightbox();
+  });
+
+  // ══════════════════════════════════
+  // 9. BOOKING FORM
+  // ══════════════════════════════════
+  const form       = document.getElementById('enquiryForm');
+  const submitBtn  = document.getElementById('submitBtn');
+  const formStatus = document.getElementById('formStatus');
+
+  if (form) {
+    // Set min date to today
+    const dateInput = document.getElementById('datum');
+    if (dateInput) dateInput.min = new Date().toISOString().split('T')[0];
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!validateForm()) return;
+
+      submitBtn.classList.add('loading');
+      submitBtn.disabled = true;
+      formStatus.className = 'form-feedback';
+      formStatus.style.display = 'none';
+
+      // Replace with real API call
+      await new Promise(r => setTimeout(r, 1800));
+
+      submitBtn.classList.remove('loading');
+      submitBtn.disabled = false;
+
+      formStatus.textContent = '🎉 Bedankt! We nemen binnen 24 uur contact met u op.';
+      formStatus.className = 'form-feedback success';
+      form.reset();
+
+      setTimeout(() => {
+        formStatus.style.display = 'none';
+        formStatus.className = 'form-feedback';
+      }, 7000);
     });
+  }
 
-    // ── 9. TOPPING CARD HOVER TILT ────────────────────────────────────────
-    const toppingCards = document.querySelectorAll('.topping-card, .feature-card');
-
-    toppingCards.forEach(card => {
-        card.addEventListener('mousemove', e => {
-            const rect = card.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / rect.width  - 0.5;
-            const y = (e.clientY - rect.top)  / rect.height - 0.5;
-            card.style.transform = `translateY(-6px) perspective(600px) rotateY(${x * 6}deg) rotateX(${-y * 4}deg)`;
-        });
-        card.addEventListener('mouseleave', () => {
-            card.style.transform = '';
-        });
+  function validateForm() {
+    const fields = ['naam', 'femail', 'eventType', 'datum'];
+    let ok = true;
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (!el.value.trim()) {
+        el.classList.add('error');
+        el.addEventListener('input', () => el.classList.remove('error'), { once: true });
+        ok = false;
+      }
     });
-
-    // ── 10. HERO PARALLAX (subtle) ────────────────────────────────────────
-    const heroBubbles = document.querySelector('.bubble-bg');
-    if (heroBubbles) {
-        window.addEventListener('scroll', () => {
-            const y = window.scrollY;
-            if (y < window.innerHeight) {
-                heroBubbles.style.transform = `translateY(${y * 0.25}px)`;
-            }
-        }, { passive: true });
+    if (!ok) {
+      formStatus.textContent = 'Vul alle verplichte velden in.';
+      formStatus.className = 'form-feedback error';
     }
+    return ok;
+  }
 
-    // ── 11. PANCAKE EMOJI SPRINKLE (Easter egg on logo click) ─────────────
-    const logoEl = document.querySelector('.logo');
-    if (logoEl) {
-        logoEl.addEventListener('click', sprinklePancakes);
-    }
+  // ══════════════════════════════════
+  // 10. CRAFT CARD SUBTLE TILT
+  // ══════════════════════════════════
+  document.querySelectorAll('.craft-card, .t-card, .ev-card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const r  = card.getBoundingClientRect();
+      const x  = (e.clientX - r.left) / r.width  - .5;
+      const y  = (e.clientY - r.top)  / r.height - .5;
+      card.style.transform = `translateY(-6px) perspective(700px) rotateY(${x * 5}deg) rotateX(${-y * 3}deg)`;
+    });
+    card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+  });
 
-    function sprinklePancakes() {
-        const emojis = ['🥞', '🧇', '🍫', '🍓', '⭐'];
-        for (let i = 0; i < 10; i++) {
-            const el = document.createElement('span');
-            el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-            el.style.cssText = `
-                position: fixed;
-                left: ${Math.random() * 100}vw;
-                top: -2rem;
-                font-size: ${1.2 + Math.random() * 1.5}rem;
-                pointer-events: none;
-                z-index: 9999;
-                animation: fall ${1.5 + Math.random()}s ease-in forwards;
-                animation-delay: ${Math.random() * 0.5}s;
-            `;
-            document.body.appendChild(el);
-            el.addEventListener('animationend', () => el.remove());
-        }
-    }
+  // ══════════════════════════════════
+  // 11. LOGO EASTER EGG 🥞
+  // ══════════════════════════════════
+  const logoEl = document.querySelector('.logo');
+  if (logoEl) logoEl.addEventListener('click', sprinkle);
 
-    // Inject fall keyframes once
-    if (!document.getElementById('fallKeyframes')) {
-        const style = document.createElement('style');
-        style.id = 'fallKeyframes';
-        style.textContent = `
-            @keyframes fall {
-                0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
-                100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
+  function sprinkle() {
+    const emojis = ['🥞','🍫','🍓','⭐','🧇','🍌'];
+    for (let i = 0; i < 12; i++) {
+      const el = document.createElement('span');
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      Object.assign(el.style, {
+        position: 'fixed',
+        left: `${Math.random() * 100}vw`,
+        top: '-2rem',
+        fontSize: `${1.2 + Math.random() * 1.4}rem`,
+        pointerEvents: 'none',
+        zIndex: '9999',
+        animation: `pancakeFall ${1.5 + Math.random() * .8}s ease-in forwards`,
+        animationDelay: `${Math.random() * .4}s`,
+      });
+      document.body.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
     }
+  }
+
+  if (!document.getElementById('sprinkleKF')) {
+    const s = document.createElement('style');
+    s.id = 'sprinkleKF';
+    s.textContent = `@keyframes pancakeFall {
+      0%   { transform: translateY(0) rotate(0deg);   opacity: 1; }
+      100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+    }`;
+    document.head.appendChild(s);
+  }
+
+  // ══════════════════════════════════
+  // 13. WHY-US CHECKLIST INTERACTION
+  // ══════════════════════════════════
+  document.querySelectorAll('.why-item').forEach(item => {
+    // Click toggles active (expand description)
+    item.addEventListener('click', () => {
+      const isActive = item.classList.contains('active');
+      // Close all others
+      document.querySelectorAll('.why-item').forEach(i => i.classList.remove('active'));
+      // Toggle this one
+      if (!isActive) item.classList.add('active');
+    });
+    // Keyboard: Enter/Space to toggle
+    item.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        item.click();
+      }
+    });
+  });
+
+  // ══════════════════════════════════
+  // 14. INITIAL LOAD TRIGGER
+  // ══════════════════════════════════
+  revealOnScroll();
+  setActiveLink();
 
 });
